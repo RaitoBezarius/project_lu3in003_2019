@@ -2,6 +2,10 @@ module LocalUtils where
   import Data.Array
   import System.Directory
   import Data.List
+  import System.Random (randomRIO)
+  import Data.List.Split
+  import Data.Maybe (Maybe)
+  import Control.Monad
   type ADNInstance = (String, String)
 
   data PosInf a = Infinity | Finite a deriving (Show, Read, Eq)
@@ -40,6 +44,13 @@ module LocalUtils where
   optional_func x y = if x then y else id
 
   -- Pour travailler avec les instances du projet
+  instanceFromString :: String -> ADNInstance
+  instanceFromString "" = error "empty instance"
+  instanceFromString contents =
+    let [n, m, x, y] = lines contents
+    in
+    (filter (/=' ') x, filter (/=' ') y)
+
   read_instance :: FilePath -> IO ADNInstance
   read_instance file_path = do
     contents <- readFile file_path
@@ -59,4 +70,21 @@ module LocalUtils where
   load_testfiles :: [FilePath] -> IO [FileCase]
   load_testfiles = traverse read_filecase
 
+  sizeFromFilePath :: FilePath -> Int
+  sizeFromFilePath f = (read ((splitOn "_" f) !! 2)) :: Int
 
+  filterBySize :: (Int -> Bool) -> [FilePath] -> [FilePath]
+  filterBySize p = filter (\f -> p $ sizeFromFilePath f)
+  
+  randomFileCase :: [FileCase] -> IO FileCase
+  randomFileCase [] = error "Empty filecase"
+  randomFileCase xs = do
+    random_filecase <- ((xs !!) <$> randomRIO (0, length xs - 1))
+    return random_filecase
+
+  setupEnv :: Int -> IO ADNInstance
+  setupEnv n = do
+    testfiles <- get_testfiles_in_directory "Instances_genome"
+    all <- load_testfiles (filterBySize (== n) testfiles)
+    fc <- randomFileCase all
+    return $ file_input fc

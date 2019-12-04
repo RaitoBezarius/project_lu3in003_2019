@@ -3,6 +3,8 @@ title: Rapport du mini-projet
 author: \textsc{Ryan Lahfa}
 advanced-maths: true
 advanced-cs: true
+toc: true
+lof: true
 lang: fr
 ---
 
@@ -109,7 +111,11 @@ Afin de trouver la distance d'édition entre deux mots, on peut avoir une variab
 
 Stocker une variable de distance ne consomme qu'un entier, en revanche, énumérer tous les alignements peut se faire récursivement, ce qui consommera de la mémoire au niveau de la pile d'appel et de la fonction elle-même.
 
-À TERMINER.
+Afin de suivre les alignements qu'on construit, on peut se contenter d'allouer deux chaînes de taille $n + m$ et de les passer le long des appels récursifs et de réécrire sur la case qui nous intéresse, c'est toujours possible, puisque `DIST_NAIF_REC` ne regarde que les indices $i' \geq i$ et $j' \geq j$.
+
+Enfin, on peut évaluer la profondeur de l'arbre des appels récursifs en basant sur `DIST_NAIF_REC` qui est de profondeur $n + m$ dans le pire cas.
+
+Ainsi, la complexité spatiale selon l'implémentation exacte sera en $\Theta(n + m)$.
 
 # Question 7
 
@@ -229,7 +235,7 @@ $T(0, 0) \longleftarrow 0$\;
         \Pour{$j$ allant de 1 à $m$}{
         $A \leftarrow T(i - 1, j) + \cins$ \;
         $S \leftarrow T(i, j - 1) + \cdel$ \;
-        $C \leftarrow T(i - 1, j - 1) + \ecsub(x_{i - 1}, y_{j - 1})$ \;
+        $C \leftarrow T(i - 1, j - 1) + \ecsub(x_i, y_j)$ \;
         $T(i, j) \leftarrow \min \{ A, S, C \}$ \;
         }
 }
@@ -280,19 +286,19 @@ Ensuite, $C(s \cdot \mbox{--}, t \cdot y_j) = c_{\text{ins}} + C(s, t) = c_{\tex
         $j \longleftarrow m - 1$\;
         \Tq{$i > 0$ ou $j > 0$}{
                 \Si{$i > 0$ et $j > 0$ et $T(i, j) = T(i - 1, j - 1) + \cins$}{
-                        $u \leftarrow x_i u$ \;
-                        $v \leftarrow y_j v$ \;
+                        $u \leftarrow x_i \cdot u$ \;
+                        $v \leftarrow y_j \cdot v$ \;
                         $i \leftarrow i - 1$ \;
                         $j \leftarrow j - 1$ \;
                 }
                 \SinonSi{$i > 0$ et $T(i, j) = T(i - 1, j) + \cdel$}{
-                        $u \leftarrow x_i u$ \;
-                        $v \leftarrow - v$ \;
+                        $u \leftarrow x_i \cdot u$ \;
+                        $v \leftarrow - \cdot v$ \;
                         $i \leftarrow i - 1$\;
                 }
                 \Sinon{
-                        $u \leftarrow - u$ \;
-                        $v \leftarrow y_j v$ \;
+                        $u \leftarrow - \cdot u$ \;
+                        $v \leftarrow y_j \cdot v$ \;
                         $j \leftarrow j - 1$ \;
                 }
         }
@@ -330,15 +336,15 @@ Il suffit donc de garder que deux lignes à la fois, ce qui fournira une complex
 \caption{DIST\_2}
 \Entree{$x, y$ deux mots de longueur $n, m$}
 \Donnees{$\textrm{LigneCourante}$ et $\textrm{DerniereLigne}$ représentant les deux dernières lignes du tableau $D$ à tout instant}
-\Sortie{$\textrm{LigneCourante}(m - 1) = d(x, y)$}
+\Sortie{$\textrm{LigneCourante}(m) = d(x, y)$}
 \Deb{
 $\textrm{LigneCourante}(0) \longleftarrow 0$\;
-\Pour{$j$ allant de 0 à $m - 1$}{
+\Pour{$j$ allant de 0 à $m$}{
         $\textrm{DerniereLigne}(j) \leftarrow j \cins$\;
 }
-\Pour{$i$ allant de 1 à $n - 1$}{ 
+\Pour{$i$ allant de 1 à $n$}{ 
         $\textrm{LigneCourante}(0) \leftarrow i \cdel$\;
-        \Pour{$j$ allant de 1 à $m - 1$}{
+        \Pour{$j$ allant de 1 à $m$}{
                 $A \leftarrow \textrm{DerniereLigne}(j) + \cins$ \;
                 $S \leftarrow \textrm{LigneCourante}(j - 1) + \cdel$ \;
                 $C \leftarrow \textrm{DerniereLigne}(j - 1) + \ecsub(x_i, y_j)$ \;
@@ -389,14 +395,20 @@ Toute autre décision ajoute un coût strictement supérieur aux coûts précéd
 \DontPrintSemicolon
 \caption{align\_lettre\_mot}
 \Entree{Un mot $x$ de longueur 1 et $y$ un mot de longueur $m \geq 1$}
-\Sortie{$(u, v)$ le meilleur alignement de $(x, y)$}
+\Sortie{$(u, v)$ un alignement optimal de $(x, y)$}
 \Deb{
         $k_0 \longleftarrow \argmin_{k \in [[1, m]]} \ecsub(x_1, y_k)$ \;
         \Si{$\cdel + \cins \geq \ecsub(x_0, y_{k_0})$}{
-                retourner $(\textrm{mot\_gaps}(k_0 - 1) \cdot x_1 \cdot \textrm{mot\_gaps}(m - k_0 + 1), y)$ \;
+                \Si{$k_0 = 1$}{
+                        retourner $(x_1 \cdot \texttt{mot\_gaps}(m - 1), y)$ \;
+                }\SinonSi{$k_0 = m$}{
+                        retourner $(\texttt{mot\_gaps}(m - 1) \cdot x_1, y)$ \;
+                }\Sinon{
+                        retourner $(\texttt{mot\_gaps}(k_0 - 1) \cdot x_1 \cdot \texttt{mot\_gaps}(m - k_0), y)$ \;
+                }
         }
         \Sinon{
-                retourner $(\textrm{mot\_gaps}(m) \cdot x_1, y \cdot -)$ \;
+                retourner $(\texttt{mot\_gaps}(m) \cdot x_1, y \cdot -)$ \;
         }
 }
 \end{algorithm}
@@ -481,7 +493,7 @@ $I\LC(0) \leftarrow 0$\;
         \Si{$i > i^{*}$}{
                 $I\DL \leftarrow I\LC$\;
         }
-        $D\DL \leftarrow I\LC$\;
+        $D\DL \leftarrow D\LC$\;
 }
 retourner $I\LC(m)$ \;
 }
@@ -523,6 +535,217 @@ On effectue $\Theta(nm)$ itérations, chaque itération peut se faire en $O(1)$ 
 
 # Question 29
 
-D'un point de vue théorique, on remarque qu'on recalcule `coupure` trop souvent, donc expérimentalement, on va constater une perte de complexité temporelle.
+D'un point de vue théorique, on remarque qu'on recalcule `coupure` trop souvent, donc expérimentalement, on s'attend à constater une perte de vitesse.
 
-En pratique, on trace les temps CPU de `SOL_1` et `SOL_2` :
+En pratique, on trace les temps CPU de `SOL_1` et `SOL_2` qu'on peut retrouver~\ref{sol_1_vs_sol_2} avec des échelles logarithmiques en abscisses et en ordonnées.
+
+On constate que `SOL_2` est nettement plus rapide que `SOL_1`, on peut avancer plusieurs raisons:
+
+(1) `SOL_2` est écrit en utilisant `Data.Vector.Unboxed.Mutable` dans un contexte monadique `ST`, ce qui n'est pas le cas de `SOL_1`, ainsi il bénéficie d'optimisations importantes (notamment car `Int` est un type primitif et il y a des spécialisations faites en ce sens-là).
+(2) GHC est un compilateur très agressif qui fonctionne mieux sur un style récursif plutôt qu'impératif: `SOL_2` est récursif tandis que `SOL_1` recourt à un appel de calcul du tableau $D$ qui lui est itératif.
+(3) La localité durant le parcours du tableau $D$ n'est pas nécessairement assurée dans `SOL_1` tandis que dans `SOL_2`, on s'en assure.
+
+Afin de vérifier cette assertion, j'ai décidé de réécrire `SOL_1` en `SOL_1'` avec un style `ST` pour le calcul du tableau $D$ de façon mutable, je présenterai les résultats durant la soutenance.
+
+# Tâche A
+
+On observe que l'implémentation est valide sur les instances fournies.
+
+On constate pour $n = 10$ avec `time`:
+
+```
+1.08user 0.10system 0:01.17elapsed 101%CPU (0avgtext+0avgdata 161452maxresident)k
+0inputs+8outputs (0major+24557minor)pagefaults 0swaps
+```
+
+Puis pour $n = 13$ avec `time` :
+
+```
+41.33user 0.34system 0:42.07elapsed 99%CPU (0avgtext+0avgdata 161484maxresident)k
+0inputs+0outputs (0major+24562minor)pagefaults 0swaps
+```
+
+On vérifie pour $n = 15$ avec `time` :
+```
+540.91user 1.61system 9:04.83elapsed 99%CPU (0avgtext+0avgdata 161824maxresident)k
+0inputs+8outputs (0major+24791minor)pagefaults 0swaps
+```
+
+On conclut donc que $n = 13$ est la limite pour calculer sous moins d'une minute.
+
+Quant à la consommation RAM, on donne ici les calculs effectués par l'instrumentation d'Haskell durant l'exécution:
+
+```
+   7,012,881,760 bytes allocated in the heap
+   3,816,895,368 bytes copied during GC
+   1,173,899,880 bytes maximum residency (12 sample(s))
+       3,364,248 bytes maximum slop
+            1119 MB total memory in use (0 MB lost due to fragmentation)
+
+                                     Tot time (elapsed)  Avg pause  Max pause
+  Gen  0      6035 colls,     0 par    3.014s   3.189s     0.0005s    0.0019s
+  Gen  1        12 colls,     0 par    1.671s   2.400s     0.2000s    1.1812s
+
+  INIT    time    0.000s  (  0.000s elapsed)
+  MUT     time    3.782s  (  3.956s elapsed)
+  GC      time    4.685s  (  5.589s elapsed)
+  RP      time    0.000s  (  0.000s elapsed)
+  PROF    time    0.000s  (  0.000s elapsed)
+  EXIT    time    0.000s  (  0.000s elapsed)
+  Total   time    8.468s  (  9.546s elapsed)
+
+  %GC     time       0.0%  (0.0% elapsed)
+
+  Alloc rate    1,854,169,786 bytes per MUT second
+
+  Productivity  44.7% of total user, 41.4% of total elapsed
+```
+
+Pour une instance $n = 12$, on constate donc qu'1 GiB de RAM ont été utilisé pour le calcul, ce qui est attendu compte tenu de l'absence d'optimisation de la façon naïve de calculer.
+
+# Tâche B
+
+On vérifie de la même façon qu'avec la tâche A les instances connues.
+
+De plus, on vérifie que les sorties de `PROG_DYN` vérifient les conditions d'un alignement sur toutes les instances faisables en moins de dix minutes.
+
+On trace la courbe de temps CPU de `DIST_1` et `SOL_1` dans la figure \ref{cpu_dist_1_and_sol_1}.
+
+\begin{figure}[ht]
+\centering
+\includegraphics[width=10cm]{charts/CPU_SOL_1_AND_DIST_1.png}
+\caption{Moyenne du temps CPU (statistiquement signifiant, $R^2 > 0.9$) en échelle logarithmique sur les deux axes pour \texttt{DIST\_1}, \texttt{SOL\_1}}
+\label{cpu_dist_1_and_sol_1}
+\end{figure}
+
+# Tâche C
+
+On vérifie de la même façon qu'avec la tâche A les instances connues.
+
+On trace la courbe de temps CPU de `DIST_1` et `DIST_2` dans la figure \ref{cpu_dist_1_vs_dist_2}.
+
+\begin{figure}[ht]
+\centering
+\includegraphics[width=10cm]{charts/CPU_DIST_1_vs_DIST_2.png}
+\caption{Moyenne du temps CPU (statistiquement signifiant, $R^2 > 0.9$) en échelle logarithmique sur les deux axes pour \texttt{DIST\_1}, \texttt{DIST\_2}}
+\label{cpu_dist_1_vs_dist_2}
+\end{figure}
+
+# Tâche D
+
+On vérifie comme dans la tâche B que `SOL_2` retourne des alignements correctement produits.
+
+On trace la courbe de temps CPU de `SOL_2` dans la figure \ref{cpu_dist_1_vs_dist_2}.
+
+\begin{figure}[ht]
+\centering
+\includegraphics[width=10cm]{charts/CPU_SOL_2.png}
+\caption{Moyenne du temps CPU (statistiquement signifiant, $R^2 > 0.9$) en échelle logarithmique sur les deux axes pour \texttt{SOL\_2}}
+\label{cpu_dist_1_vs_dist_2}
+\end{figure}
+
+# Comparatif
+
+## Un mot sur la méthodologie de la mesure temps CPU et RAM
+
+Tant que c'est possible, les comparatifs sont issus de calculs effectués assez de fois pour que la variance soit minimale et que l'écart-type reste acceptable.
+
+D'ailleurs, les tracés sont effectués avec les erreurs, mais la plupart des erreurs sont de l'ordre de la milliseconde donc ne sont pas visible.
+
+Cependant, certaines fonctions ne peuvent pas tourner assez de fois pour minimiser leur variance, par exemple `DIST_NAIF` est trop lente pour qu'on puisse faire des statistiques sérieuses.
+
+Contrairement à la consommation RAM qui est facilement reproducible car les allocateurs (de GHC) n'ont pas un comportement indéterministe dans des conditions idéales.
+
+C'est pour cela qu'on verra dans certains tracés l'absence de points pour certaines fonctions puisque cela prendrait trop de temps à calculer de façon statistiquement signifiant. Ce n'est pas grave puisqu'une fonction qui prend trop de temps à être calculé statistiquement est une fonction dont les points seront trop haut sur l'hypothétique courbe complète.
+
+Enfin, on a bien veillé à employer les formes normales (ou la weak head normal form si cela suffisait) des fonctions en Haskell lors des mesures pour éviter de fausser le calcul en raison du comportement d'évaluation paresseux.
+
+Les courbes de consommation RAM seront mis dans les slides de la soutenance, en attendant, les tableaux de consommation RAM des expériences sont joints à la fin.
+
+## Distances d'édition
+
+On trace la courbe de temps CPU de `DIST_1`, `DIST_2`, `DIST_NAIF` sur les entrées faisables par les fonctions dans la figure\ref{cpu_edf}
+
+\begin{figure}[ht]
+\centering
+\includegraphics[width=10cm]{charts/CPU_EDF.png}
+\caption{Moyenne du temps CPU (statistiquement signifiant, $R^2 > 0.9$) en échelle logarithmique sur les deux axes pour \texttt{DIST\_1}, \texttt{DIST\_2}, \texttt{DIST\_NAIF}}
+\label{cpu_edf}
+\end{figure}
+
+
+<!-- TODO: put it! -->
+
+## Calcul d'un alignement optimal
+
+On trace la courbe de temps CPU de `PROG_DYN` et `SOL_2` tant qu'ils prennent pas plus de dix minutes (par instance) qu'on peut retrouver à la figure \ref{cpu_sol_1_vs_sol_2}.
+
+\begin{figure}[ht]
+\centering
+\includegraphics[width=10cm]{charts/CPU_ADF.png}
+\caption{Moyenne du temps CPU (statistiquement signifiant, $R^2 > 0.9$) en échelle logarithmique sur les deux axes pour \texttt{SOL\_1}, \texttt{SOL\_2}}
+\label{cpu_sol_1_vs_sol_2}
+\end{figure}
+
+## Consommation RAM (tableaux)
+
+|Cas|Allocations (en octets)|GCs (ramasse-miette, en octets)|
+|:---|---:|---:|
+|dist_2(10)|0|0|
+|dist_1(10)|0|0|
+|dist_2(12)|0|0|
+|dist_1(12)|0|0|
+|dist_2(13)|0|0|
+|dist_1(13)|0|0|
+|dist_2(14)|0|0|
+|dist_1(14)|0|0|
+|dist_2(15)|0|0|
+|dist_1(15)|0|0|
+|dist_2(20)|0|0|
+|dist_1(20)|0|0|
+|dist_2(50)|0|0|
+|dist_1(50)|0|0|
+|dist_2(100)|0|2|
+|dist_1(100)|0|3|
+|dist_2(500)|0|59|
+|dist_1(500)|10,315,168|91|
+|dist_2(1000)|0|232|
+|dist_1(1000)|40,442,336|359|
+|dist_2(2000)|0|929|
+|dist_1(2000)|240,446,144|1,441|
+|dist_2(3000)|0|2,085|
+|dist_1(3000)|551,022,480|3,234|
+|dist_2(5000)|8,584|5,811|
+|dist_1(5000)|1,470,465,344|9,066|
+|dist_2(10000)|381,520|23,137|
+
+
+|Cas|Allocations (en octets)|GCs (ramasse-miette, en octets)|
+|:---|---:|---:|
+|prog_dyn(10)|0|0|
+|sol_2(10)|0|0|
+|prog_dyn(12)|0|0|
+|sol_2(12)|0|0|
+|prog_dyn(13)|0|0|
+|sol_2(13)|0|0|
+|prog_dyn(14)|0|0|
+|sol_2(14)|0|0|
+|prog_dyn(15)|0|0|
+|sol_2(15)|0|0|
+|prog_dyn(20)|0|0|
+|sol_2(20)|0|0|
+|prog_dyn(50)|0|0|
+|sol_2(50)|0|1|
+|prog_dyn(100)|0|3|
+|sol_2(100)|2,792|7|
+|prog_dyn(500)|10,315,112|91|
+|sol_2(500)|0|175|
+|prog_dyn(1000)|40,434,408|359|
+|sol_2(1000)|0|704|
+|prog_dyn(2000)|239,912,392|1,442|
+|sol_2(2000)|0|2,770|
+|prog_dyn(3000)|551,520,008|3,261|
+|sol_2(3000)|86,008|6,322|
+|prog_dyn(5000)|1,445,826,880|8,935|
+|sol_2(5000)|690,808|17,480|
+|sol_2(10000)|2,418,336|70,119|

@@ -4,6 +4,12 @@ import LocalUtils
 import Debug.Trace
 import Algos
 
+-- Partie test
+-- On effectue deux types de test:
+-- (1) hardcodés d'après l'énoncé (tâche A)
+-- (2) check de propriété sur les générateurs d'alignements (optimaux)
+-- TODO: idéalement, on devrait rajouter aussi un QC pour tenter de falsifier la propriété
+
 data EDCase = EDCase {
   filename :: FilePath,
   output :: Int
@@ -37,7 +43,6 @@ turn_instance_into_property_check :: String -> (a -> [TestTree]) -> (String, a) 
 turn_instance_into_property_check iname p (gen_name, g) =
   testGroup ("Test de " ++ gen_name ++ " sur " ++ iname) (p g)
 
--- property checking test
 no_gap_at_same_position :: (String, String) -> Bool
 no_gap_at_same_position ("", "") = True
 no_gap_at_same_position (x : u, y : v) = (x /= '-' || y /= '-') && no_gap_at_same_position (u, v)
@@ -53,7 +58,7 @@ est_un_alignement_de (x, y) (u, v) = [
         testCase "pas de gap à la même position" ((no_gap_at_same_position (u, v) @? "Deux gaps à la même position trouvé"))]
 
 edition_distance_functions = [("distance naïve", dist_naif), ("dist_1", dist_1), ("dist_2", dist_2)]
-alignement_functions = [("sol_1", prog_dyn, 5000)]
+alignement_functions = [("sol_1", prog_dyn, 5000), ("sol_2", sol_2, 10000)]
 
 edition_distance_test_group :: [EditionDistanceExpectation] -> [(String, (ADNInstance -> Int))] -> TestTree
 edition_distance_test_group exps fns = testGroup "Tests de correction sur la distance d'édition hardcodés"
@@ -65,11 +70,6 @@ are_those_alignement_test_group instances fns = testGroup "Test de propriété d
 
 tests :: [TestTree] -> TestTree
 tests io_dependentTests = testGroup "Tests" io_dependentTests
-
--- idea: take a VerificationStatus and if that's wrong, take the list of the wrong cases, show all of them
--- show expected vs unexpected
--- if that's right, show cool stuff.
--- show_task_status
 
 main = do
   expectations <- load_expectations edition_distance_hardcoded_cases
