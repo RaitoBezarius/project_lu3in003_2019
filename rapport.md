@@ -537,13 +537,17 @@ On effectue $\Theta(nm)$ itérations, chaque itération peut se faire en $O(1)$ 
 
 D'un point de vue théorique, on remarque qu'on recalcule `coupure` trop souvent, donc expérimentalement, on s'attend à constater une perte de vitesse.
 
-En pratique, on trace les temps CPU de `SOL_1` et `SOL_2` qu'on peut retrouver~\ref{sol_1_vs_sol_2} avec des échelles logarithmiques en abscisses et en ordonnées.
+En pratique, on trace les temps CPU de `SOL_1` et `SOL_2` qu'on peut retrouver figure \ref{cpu_sol_1_vs_sol_2} avec des échelles logarithmiques en abscisses et en ordonnées.
 
-On constate que `SOL_2` est nettement plus rapide que `SOL_1`, on peut avancer plusieurs raisons:
+On constate que `SOL_2` est plus lent au départ puis beaucoup plus rapide vers la fin que `SOL_1`, on peut avancer plusieurs raisons:
 
 (1) `SOL_2` est écrit en utilisant `Data.Vector.Unboxed.Mutable` dans un contexte monadique `ST`, ce qui n'est pas le cas de `SOL_1`, ainsi il bénéficie d'optimisations importantes (notamment car `Int` est un type primitif et il y a des spécialisations faites en ce sens-là).
 (2) GHC est un compilateur très agressif qui fonctionne mieux sur un style récursif plutôt qu'impératif: `SOL_2` est récursif tandis que `SOL_1` recourt à un appel de calcul du tableau $D$ qui lui est itératif.
 (3) La localité durant le parcours du tableau $D$ n'est pas nécessairement assurée dans `SOL_1` tandis que dans `SOL_2`, on s'en assure.
+
+On peut facilement imaginer que lorsque $n$ est petit, les optimisations ne sont pas si intéressantes que ça, cependant lorsque $n$ est grand, GHC montre son efficacité.
+
+Cela choque notre intuition concernant le recalcul des `coupure` néanmoins.
 
 Afin de vérifier cette assertion, j'ai décidé de réécrire `SOL_1` en `SOL_1'` avec un style `ST` pour le calcul du tableau $D$ de façon mutable, je présenterai les résultats durant la soutenance.
 
